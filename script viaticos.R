@@ -88,4 +88,4 @@ tabla.resumen.via.repa.resto$`Promedio de días desde el últimos pase`<- as.num
 tabla.resumen.via.repa.resto$`Promedio de días desde la creación documento`<- as.numeric(tabla.resumen.via.repa.resto$`Promedio de días desde la creación documento`, units="days")
 class(tabla.resumen.via.repa.resto$`Promedio de días desde la creación documento`)
 
-names(tabla_viat)
+
