@@ -1,0 +1,309 @@
+---
+title: "**SGA - Expedientes de viáticos**"
+output: 
+  flexdashboard::flex_dashboard:
+        vertical_layout: scroll
+        orientation: rows
+        #theme: cerulean
+        theme: lumen
+        favicon: logo_sga_rojo.png
+        logo: logoMSAL35pctn.png
+---
+
+```{r echo=F, warning=FALSE, message=FALSE}
+#E)Traigo la tabla final
+library(dplyr, warn.conflicts = FALSE)
+library(janitor)
+library(data.table)
+library(stringr)
+library(lubridate)
+
+repa.off<-c("DAFYP#MS - Dirección de administración financiera y presupuestaria",
+           "DGAGN#MI - Dirección general del archivo general de la nación")
+
+tabla_viat <- fread("../Viáticos/detalle_viaticos.csv", data.table = FALSE, encoding = "Latin-1")%>% 
+  clean_names() %>% 
+  filter(estado=="Abierto") %>% 
+  filter(!(reparticion_actual %in% repa.off)) %>% 
+  select(1,2,3,5,44,43,42,45)
+```
+
+
+```{r}
+## me quedo con la primera parte de las fechas ##
+tabla_viat$fecha_de_caratulacion<- word(tabla_viat$fecha_de_caratulacion, 1, sep = fixed(" "))
+tabla_viat$fecha_de_ultimo_pase<- word(tabla_viat$fecha_de_ultimo_pase, 1, sep = fixed(" "))
+
+## paso a formato date las fechas de arriba ##
+tabla_viat$fecha_de_caratulacion<-dmy(tabla_viat$fecha_de_caratulacion)
+tabla_viat$fecha_de_ultimo_pase<-dmy(tabla_viat$fecha_de_ultimo_pase)
+
+## calculo días desde la trmitación y último pase ##
+hoy <- as.Date(Sys.Date(), format="%d/%m/%y")
+
+tabla_viat$`Días del el inicio`<-hoy - 
+  as.Date(tabla_viat$fecha_de_caratulacion, format="%d/%m/%y")
+
+tabla_viat$`Días desde último pase`<-hoy - 
+  as.Date(tabla_viat$fecha_de_ultimo_pase, format="%d/%m/%y")
+```
+
+
+```{r}
+## nombre a las variables
+
+names(tabla_viat)<-c  ("Expediente",	
+                      "Descripción"	,
+                      "Estado expediente",	
+                      "Fecha caratulación",
+                      "Repartición Actual",
+                      "Sector Actual",
+                      "Usuario actual",
+                      "Fecha desde últimos pase",
+                      "Días desde la caratulación",
+                      "Días desde último pase")
+```
+
+Listado Expedientes viáticos
+===================================== 
+
+```{r}
+
+library(dplyr)
+library(tidyverse)
+
+tabla_viat$`Días desde la caratulación`<- as.numeric(tabla_viat$`Días desde la caratulación`, units="days")
+tabla_viat$`Días desde último pase`<- as.numeric(tabla_viat$`Días desde último pase`, units="days")
+
+tabla_viat <- tabla_viat %>% 
+  mutate_if(is.character,as.factor)
+
+library(DT)
+tabla_viat [,c(1,2,3,4,5,6,7,8,9,10)] %>%
+    datatable(extensions = 'Buttons', 
+            options = list(initComplete = 
+                             JS("function(settings, json){",                     "$(this.api().table().header()).css({'background-color': '#8968CD', 'color': '#fff'});",
+                                "}"),
+                           scrollY =F,
+                           dom = 'Blfrtip',
+                           buttons = c('csv', 'excel', 'pdf'),
+                           pageLength = 200, 
+                           lengthMenu = list(c(100, 200, 500, -1),
+                                             c(100, 200, 500,"Todo")),                autoWidth = TRUE),
+            caption = "Se puede exportar a formatos csv, pdf y xls, conservando los filtros aplicados",
+            filter = 'top',
+            #order("Días desde el último pase"),
+            class = 'cell-border stripe',
+            callback = JS("return table;"), 
+            rownames=F,
+            escape = TRUE,
+            style = "default", width = NULL, height = NULL, elementId = NULL,
+            fillContainer = getOption("DT.fillContainer", NULL),
+            autoHideNavigation = getOption("DT.autoHideNavigation", NULL),
+            selection = c("multiple", "single", "none"), 
+            plugins = NULL, editable  = FALSE) 
+```
+
+Expedientes viáticos DAP#MS - DCYT#MS
+===================================== 
+
+```{r}
+
+library(dplyr)
+library(tidyverse)
+
+dap_dcyt<-c("DAP#MS - Dirección de administración de personal",
+"DCYT#MS - Dirección de contabilidad y tesorería")
+
+tabla.resumen.via.repa.dap.cit <- tabla_viat %>%
+  group_by(`Sector Actual`,`Repartición Actual`) %>% 
+  summarise(`Cantidad de expedientes`=n(),
+      `Promedio de días desde la creación documento`=(round(mean(`Días desde la caratulación`,na.rm = TRUE))),       
+      `Promedio de días desde el últimos pase`=(round(mean(`Días desde último pase`,na.rm = TRUE)))) %>% 
+  filter(`Repartición Actual`%in% dap_dcyt) %>% 
+  ungroup()
+
+tabla.resumen.via.repa.dap.cit$`Promedio de días desde el últimos pase`<- as.numeric(tabla.resumen.via.repa.dap.cit$`Promedio de días desde el últimos pase`, units="days")
+tabla.resumen.via.repa.dap.cit$`Promedio de días desde la creación documento`<- as.numeric(tabla.resumen.via.repa.dap.cit$`Promedio de días desde la creación documento`, units="days")
+
+tabla.resumen.via.repa.dap.cit <- tabla.resumen.via.repa.dap.cit %>% 
+  mutate_if(is.character,as.factor)
+
+library(DT)
+tabla.resumen.via.repa.dap.cit %>%
+  select(1,2,3,4,5) %>%
+  arrange(desc(`Promedio de días desde la creación documento`))%>%
+  datatable(extensions = 'Buttons',
+            options = list(initComplete =
+                             JS("function(settings, json){",
+                          "$(this.api().table().header()).css({'background-color': '#838B83', 'color': '#fff'});",
+                                "}"),
+                           dom = 'Blfrtip',
+                           scrollY=F,
+                           buttons = c('csv', 'excel', 'pdf'),
+                           pageLength = 200,
+                           autoWidth = TRUE,
+                           lengthMenu = list(c(10,50,100,-1),
+                                             c(10,50,100,"Todo"))),
+                      caption = "Se puede exportar a formatos csv, pdf y xls, conservando los filtros aplicados",
+            class = 'cell-border stripe',
+            callback = JS("return table;"),
+            rownames=F,
+            escape = TRUE,
+            style = "default",
+            width = NULL,
+            height = NULL,
+            elementId = NULL,
+            fillContainer = getOption("DT.fillContainer", NULL),
+            autoHideNavigation = getOption("DT.autoHideNavigation", NULL),
+            selection = c("multiple", "single", "none"),
+            plugins = NULL, editable = FALSE,
+            filter = 'top'
+            )%>%
+  formatStyle(
+    'Cantidad de expedientes',
+    background = styleColorBar(tabla.resumen.via.repa.dap.cit$`Cantidad de expedientes`,'#7AC5CD'),
+    backgroundSize = '100% 90%',
+    backgroundRepeat = 'no-repeat',
+    backgroundPosition = 'center'
+  ) %>%
+  formatStyle(
+    'Promedio de días desde la creación documento',
+    background = styleColorBar(tabla.resumen.via.repa.dap.cit$`Promedio de días desde la creación documento`,'#7CCD7C'),
+    backgroundSize = '100% 90%',
+    backgroundRepeat = 'no-repeat',
+    backgroundPosition = 'center'
+  ) %>%
+  formatStyle(
+    'Promedio de días desde el últimos pase',
+    background = styleColorBar(tabla.resumen.via.repa.dap.cit$`Promedio de días desde el últimos pase`,'#8EE5EE'),
+    backgroundSize = '100% 90%',
+    backgroundRepeat = 'no-repeat',
+    backgroundPosition = 'center')
+# library(DT)
+# tabla.resumen.via.repa.dap.cit [,c(1,2,3,4,5)] %>%
+#     datatable(extensions = 'Buttons', 
+#             options = list(initComplete = 
+#                              JS("function(settings, json){",                     "$(this.api().table().header()).css({'background-color': '#8968CD', 'color': '#fff'});",
+#                                 "}"),
+#                            scrollY =F,
+#                            dom = 'Blfrtip',
+#                            buttons = c('csv', 'excel', 'pdf'),
+#                            pageLength = 200, 
+#                            lengthMenu = list(c(100, 200, 500, -1),
+#                                              c(100, 200, 500,"Todo")),                autoWidth = TRUE),
+#             caption = "Se puede exportar a formatos csv, pdf y xls, conservando los filtros aplicados",
+#             filter = 'top',
+#             #order("Días desde el último pase"),
+#             class = 'cell-border stripe',
+#             callback = JS("return table;"), 
+#             rownames=F,
+#             escape = TRUE,
+#             style = "default", width = NULL, height = NULL, elementId = NULL,
+#             fillContainer = getOption("DT.fillContainer", NULL),
+#             autoHideNavigation = getOption("DT.autoHideNavigation", NULL),
+#             selection = c("multiple", "single", "none"), 
+#             plugins = NULL, editable  = FALSE) 
+```
+
+Expedientes viáticos otras reparticiones
+===================================== 
+
+```{r}
+library(dplyr)
+library(tidyverse)
+
+tabla.resumen.via.repa.resto <- tabla_viat %>%
+  group_by(`Sector Actual`,`Repartición Actual`) %>% 
+  summarise(`Cantidad de expedientes`=n(),
+            `Promedio de días desde la creación documento`=(round(mean(`Días desde la caratulación`,na.rm = TRUE))),       
+            `Promedio de días desde el últimos pase`=(round(mean(`Días desde último pase`,na.rm = TRUE)))) %>% 
+  filter(!(`Repartición Actual`%in% dap_dcyt)) %>% 
+  ungroup()
+
+tabla.resumen.via.repa.resto$`Promedio de días desde el últimos pase`<- as.numeric(tabla.resumen.via.repa.resto$`Promedio de días desde el últimos pase`, units="days")
+tabla.resumen.via.repa.resto$`Promedio de días desde la creación documento`<- as.numeric(tabla.resumen.via.repa.resto$`Promedio de días desde la creación documento`, units="days")
+
+
+tabla.resumen.via.repa.resto <- tabla.resumen.via.repa.resto %>% 
+  mutate_if(is.character,as.factor)
+
+#tabla.resumen.via.repa.resto <- tabla.resumen.via.repa.resto %>% 
+#  mutate_if(is.Date,as.numeric)
+
+library(DT)
+# tabla.resumen.via.repa.resto [,c(1,2,3,4,5)] %>%
+#     datatable(extensions = 'Buttons', 
+#             options = list(initComplete = 
+#                              JS("function(settings, json){",                     "$(this.api().table().header()).css({'background-color': '#303F9F', 'color': '#fff'});",
+#                                 "}"),
+#                            scrollY =F,
+#                            dom = 'Blfrtip',
+#                            buttons = c('csv', 'excel', 'pdf'),
+#                            pageLength = 200, 
+#                            lengthMenu = list(c(100, 200, 500, -1),
+#                                              c(100, 200, 500,"Todo")),                autoWidth = TRUE),
+#             caption = "Se puede exportar a formatos csv, pdf y xls, conservando los filtros aplicados",
+#             filter = 'top',
+#             #order("Días desde el último pase"),
+#             class = 'cell-border stripe',
+#             callback = JS("return table;"), 
+#             rownames=F,
+#             escape = TRUE,
+#             style = "default", width = NULL, height = NULL, elementId = NULL,
+#             fillContainer = getOption("DT.fillContainer", NULL),
+#             autoHideNavigation = getOption("DT.autoHideNavigation", NULL),
+#             selection = c("multiple", "single", "none"), 
+#             plugins = NULL, editable  = FALSE) 
+
+tabla.resumen.via.repa.resto %>%
+  select(1,2,3,4,5) %>%
+  arrange(desc(`Promedio de días desde la creación documento`))%>%
+  datatable(extensions = 'Buttons',
+            options = list(initComplete =
+                             JS("function(settings, json){",
+                          "$(this.api().table().header()).css({'background-color': '#838B83', 'color': '#fff'});",
+                                "}"),
+                           dom = 'Blfrtip',
+                           scrollY=F,
+                           buttons = c('csv', 'excel', 'pdf'),
+                           pageLength = 200,
+                           autoWidth = TRUE,
+                           lengthMenu = list(c(10,50,100,-1),
+                                             c(10,50,100,"Todo"))),
+                      caption = "Se puede exportar a formatos csv, pdf y xls, conservando los filtros aplicados",
+            class = 'cell-border stripe',
+            callback = JS("return table;"),
+            rownames=F,
+            escape = TRUE,
+            style = "default",
+            width = NULL,
+            height = NULL,
+            elementId = NULL,
+            fillContainer = getOption("DT.fillContainer", NULL),
+            autoHideNavigation = getOption("DT.autoHideNavigation", NULL),
+            selection = c("multiple", "single", "none"),
+            plugins = NULL, editable = FALSE,
+            filter = 'top'
+            )%>%
+  formatStyle(
+    'Cantidad de expedientes',
+    background = styleColorBar(tabla.resumen.via.repa.resto$`Cantidad de expedientes`,'#7AC5CD'),
+    backgroundSize = '100% 90%',
+    backgroundRepeat = 'no-repeat',
+    backgroundPosition = 'center'
+  ) %>%
+  formatStyle(
+    'Promedio de días desde la creación documento',
+    background = styleColorBar(tabla.resumen.via.repa.resto$`Promedio de días desde la creación documento`,'#7CCD7C'),
+    backgroundSize = '100% 90%',
+    backgroundRepeat = 'no-repeat',
+    backgroundPosition = 'center'
+  ) %>%
+  formatStyle(
+    'Promedio de días desde el últimos pase',
+    background = styleColorBar(tabla.resumen.via.repa.resto$`Promedio de días desde el últimos pase`,'#8EE5EE'),
+    backgroundSize = '100% 90%',
+    backgroundRepeat = 'no-repeat',
+    backgroundPosition = 'center')
+```
