@@ -32,9 +32,15 @@ tabla_viat <- fread("../Viaticos/detalle_viaticos.csv", data.table = FALSE, enco
 ## leveanto fecha inicio viático ##
 
 tabla_fecha_inicio_viaje <- fread("../Viaticos/Viáticos Nacionales del Ministerio de Salud de la Nación.csv",data.table = FALSE, encoding = "Latin-1") %>%  
-  clean_names()  
-  view(tabla_fecha_inicio_viaje)
+  clean_names() %>% 
+  select (2,8) %>% 
+  
 
+names(tabla_fecha_inicio_viaje)  2 y 8
+generar un campo de la 8 menos fecha caratulacion y se
+se va a llamar "dias de anticipo / retraso" si el numero
+es negativo 
+  
 ## me quedo con la primera parte de las fechas ##
 tabla_viat$fecha_de_caratulacion<- word(tabla_viat$fecha_de_caratulacion, 1, sep = fixed(" "))
 tabla_viat$fecha_de_ultimo_pase<- word(tabla_viat$fecha_de_ultimo_pase, 1, sep = fixed(" "))
