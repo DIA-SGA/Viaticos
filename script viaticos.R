@@ -23,11 +23,17 @@ p_load(readxl,tidyverse,lubridate,R.utils,poorman,data.table,janitor,zoo)
 repa.off<-c("DAFYP#MS - Dirección de administración financiera y presupuestaria",
            "DGAGN#MI - Dirección general del archivo general de la nación")
 
-tabla_viat <- fread("../Viáticos/detalle_viaticos.csv", data.table = FALSE, encoding = "Latin-1")%>% 
+tabla_viat <- fread("../Viaticos/detalle_viaticos.csv", data.table = FALSE, encoding = "Latin-1")%>% 
   clean_names() %>% 
   filter(estado=="Abierto") %>% 
   filter(!(reparticion_actual %in% repa.off)) %>% 
   select(1,2,3,5,44,43,42,45)
+
+## leveanto fecha inicio viático ##
+
+tabla_fecha_inicio_viaje <- fread("../Viaticos/Viáticos Nacionales del Ministerio de Salud de la Nación.csv",data.table = FALSE, encoding = "Latin-1") %>%  
+  clean_names()  
+  view(tabla_fecha_inicio_viaje)
 
 ## me quedo con la primera parte de las fechas ##
 tabla_viat$fecha_de_caratulacion<- word(tabla_viat$fecha_de_caratulacion, 1, sep = fixed(" "))
