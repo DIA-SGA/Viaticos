@@ -34,29 +34,47 @@ tabla_viat <- fread("../Viaticos/detalle_viaticos.csv", data.table = FALSE, enco
 tabla_fecha_inicio_viaje <- fread("../Viaticos/Viáticos Nacionales del Ministerio de Salud de la Nación.csv",data.table = FALSE, encoding = "Latin-1") %>%  
   clean_names() %>% 
   select (2,8) %>% 
-  
+  rename(expediente="numero_de_expediente") %>% 
+  distinct()
 
-names(tabla_fecha_inicio_viaje)  2 y 8
-generar un campo de la 8 menos fecha caratulacion y se
-se va a llamar "dias de anticipo / retraso" si el numero
-es negativo 
-  
+## junto base viáticos con fecha incio viaje
+
+tabla_viat_final <- tabla_viat %>% 
+  left_join (tabla_fecha_inicio_viaje, by=c("expediente")) %>% 
+  slice()
+
 ## me quedo con la primera parte de las fechas ##
-tabla_viat$fecha_de_caratulacion<- word(tabla_viat$fecha_de_caratulacion, 1, sep = fixed(" "))
-tabla_viat$fecha_de_ultimo_pase<- word(tabla_viat$fecha_de_ultimo_pase, 1, sep = fixed(" "))
+tabla_viat_final$fecha_de_partida<- word(tabla_viat_final$fecha_de_partida, 1, sep = fixed(" "))
 
 ## paso a formato date las fechas de arriba ##
-tabla_viat$fecha_de_caratulacion<-dmy(tabla_viat$fecha_de_caratulacion)
-tabla_viat$fecha_de_ultimo_pase<-dmy(tabla_viat$fecha_de_ultimo_pase)
+tabla_viat_final$fecha_de_partida<-dmy(tabla_viat_final$fecha_de_partida)
+
+## me quedo con la primera parte de las fechas ##
+tabla_viat_final$fecha_de_caratulacion<- word(tabla_viat_final$fecha_de_caratulacion, 1, sep = fixed(" "))
+tabla_viat_final$fecha_de_ultimo_pase<- word(tabla_viat_final$fecha_de_ultimo_pase, 1, sep = fixed(" "))
+
+## paso a formato date las fechas de arriba ##
+tabla_viat_final$fecha_de_caratulacion<-dmy(tabla_viat_final$fecha_de_caratulacion)
+tabla_viat_final$fecha_de_ultimo_pase<-dmy(tabla_viat_final$fecha_de_ultimo_pase)
 
 ## calculo días desde la trmitación y último pase ##
 hoy <- as.Date(Sys.Date(), format="%d/%m/%y")
 
-tabla_viat$`Días del el inicio`<-hoy - 
-  as.Date(tabla_viat$fecha_de_caratulacion, format="%d/%m/%y")
+tabla_viat_final$`Días del el inicio`<-hoy - 
+  as.Date(tabla_viat_final$fecha_de_caratulacion, format="%d/%m/%y")
 
-tabla_viat$`Días desde último pase`<-hoy - 
+tabla_viat_final$`Días desde último pase`<-hoy - 
   as.Date(tabla_viat$fecha_de_ultimo_pase, format="%d/%m/%y")
+
+tabla_viat_final$`Días de anticipo - retraso`<-fecha_de_partida - 
+  as.Date(tabla_viat_final$fecha_de_caratulacion, format="%d/%m/%y")
+
+#generar un campo de la 8 menos fecha caratulacion y se
+#se va a llamar "dias de anticipo / retraso" si el numero
+#es negativo 
+
+
+
 
 ## nombre a las variables
 
