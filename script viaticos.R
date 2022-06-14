@@ -18,7 +18,6 @@ library(pacman)
 p_load(readxl,tidyverse,lubridate,R.utils,poorman,data.table,janitor,zoo)
 
 ## levanto la base de viáticos ##
-
 ## esto quita estas reparticiones de la base de viáticos
 repa.off<-c("DAFYP#MS - Dirección de administración financiera y presupuestaria",
            "DGAGN#MI - Dirección general del archivo general de la nación")
@@ -37,11 +36,14 @@ tabla_fecha_inicio_viaje <- fread("../Viaticos/Viáticos Nacionales del Minister
   rename(expediente="numero_de_expediente") %>% 
   distinct()
 
+## reemplazo perdidos por NA en variablle expediente
+
+tabla_fecha_inicio_viaje$expediente[tabla_fecha_inicio_viaje$expediente==""] <- NA
+
 ## junto base viáticos con fecha incio viaje
 
 tabla_viat_final <- tabla_viat %>% 
-  left_join (tabla_fecha_inicio_viaje, by=c("expediente")) %>% 
-  slice()
+  left_join (tabla_fecha_inicio_viaje, by=c("expediente")) 
 
 ## me quedo con la primera parte de las fechas ##
 tabla_viat_final$fecha_de_partida<- word(tabla_viat_final$fecha_de_partida, 1, sep = fixed(" "))
@@ -57,37 +59,44 @@ tabla_viat_final$fecha_de_ultimo_pase<- word(tabla_viat_final$fecha_de_ultimo_pa
 tabla_viat_final$fecha_de_caratulacion<-dmy(tabla_viat_final$fecha_de_caratulacion)
 tabla_viat_final$fecha_de_ultimo_pase<-dmy(tabla_viat_final$fecha_de_ultimo_pase)
 
-## calculo días desde la trmitación y último pase ##
+## calculo días desde la trmitación último pase y dias retraso ##
 hoy <- as.Date(Sys.Date(), format="%d/%m/%y")
 
-tabla_viat_final$`Días del el inicio`<-hoy - 
+tabla_viat_final$`Días desde el inicio`<-hoy - 
   as.Date(tabla_viat_final$fecha_de_caratulacion, format="%d/%m/%y")
 
 tabla_viat_final$`Días desde último pase`<-hoy - 
-  as.Date(tabla_viat$fecha_de_ultimo_pase, format="%d/%m/%y")
+  as.Date(tabla_viat_final$fecha_de_ultimo_pase, format="%d/%m/%y")
 
-tabla_viat_final$`Días de anticipo - retraso`<-fecha_de_partida - 
+tabla_viat_final$`Días de anticipo - retraso`<-tabla_viat_final$fecha_de_partida - 
   as.Date(tabla_viat_final$fecha_de_caratulacion, format="%d/%m/%y")
 
-#generar un campo de la 8 menos fecha caratulacion y se
-#se va a llamar "dias de anticipo / retraso" si el numero
-#es negativo 
+## paso a numéric las variables de días que están datediff
+tabla_viat_final$`Días desde el inicio` <- as.numeric(tabla_viat_final$`Días desde el inicio`)
+tabla_viat_final$`Días desde último pase` <- as.numeric(tabla_viat_final$`Días desde último pase`)
+tabla_viat_final$`Días de anticipo - retraso` <- as.numeric(tabla_viat_final$`Días de anticipo - retraso`)
 
+## genero una variable que sea reintegro u anticipo
 
-
+names(tabla_viat_final)
+tabla_viat_final<-tabla_viat_final %>% 
+mutate(`Tipo de solicitud`=ifelse(`Días de anticipo - retraso`>0,"Anticipo - Solicitud","Reintegro"))
 
 ## nombre a las variables
 
-names(tabla_viat)<-c  ("Expediente",	
+names(tabla_viat_final)<-c  ("Expediente",	
                       "Descripción"	,
                       "Estado expediente",	
                       "Fecha caratulación",
                       "Repartición Actual",
                       "Sector Actual",
                       "Usuario actual",
-                      "Fecha desde últimos pase",
+                      "Fecha desde último pase",
+                      "Fecha inicio viaje",
                       "Días desde la caratulación",
-                      "Días desde último pase")
+                      "Días desde último pase",
+                      "Días de anticipo - retraso",
+                      "Tipo de solicitud")
 
 ## agrupamos por repatición y sector
 
@@ -98,7 +107,7 @@ tabla_viat <- tabla_viat %>%
 dap_dcyt<-c("DAP#MS - Dirección de administración de personal",
 "DCYT#MS - Dirección de contabilidad y tesorería")
 
-tabla.resumen.via.repa.dap.cit <- tabla_viat %>%
+tabla.resumen.via.repa.dap.cit <- tabla_viat_final %>%
   group_by(`Sector Actual`,`Repartición Actual`) %>% 
   summarise(`Cantidad de expedientes`=n(),
       `Promedio de días desde la creación documento`=(round(mean(`Días desde la caratulación`,na.rm = TRUE))),       
