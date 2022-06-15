@@ -85,7 +85,8 @@ tabla_viat_final$`Días de anticipo - retraso` <- as.numeric(tabla_viat_final$`D
 ```{r}
 ## genero una variable que sea reintegro u anticipo
 tabla_viat_final<-tabla_viat_final %>% 
-mutate(`Tipo de solicitud`=ifelse(`Días de anticipo - retraso`>0,"Anticipo - Solicitud","Reintegro"))
+mutate(`Tipo de solicitud`=ifelse(`Días de anticipo - retraso`>0,"Anticipo - Solicitud","Reintegro")) %>% 
+  filter(between(fecha_de_caratulacion, as.Date("2020-01-01"), as.Date("2023-12-31")))
 ```
 
 ```{r}
@@ -174,7 +175,7 @@ tabla.resumen.via.repa.dap.cit <- tabla.resumen.via.repa.dap.cit %>%
 
 library(DT)
 tabla.resumen.via.repa.dap.cit %>%
-  select(1,2,3,4,5) %>%
+  select(2,1,3,4,5) %>%
   arrange(desc(`Promedio de días desde la creación documento`))%>%
   datatable(extensions = 'Buttons',
             options = list(initComplete =
@@ -300,7 +301,7 @@ library(DT)
 #             plugins = NULL, editable  = FALSE) 
 
 tabla.resumen.via.repa.resto %>%
-  select(1,2,3,4,5) %>%
+  select(2,1,3,4,5) %>%
   arrange(desc(`Promedio de días desde la creación documento`))%>%
   datatable(extensions = 'Buttons',
             options = list(initComplete =
