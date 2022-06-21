@@ -82,7 +82,7 @@ names(tabla_viat_final)
 tabla_viat_final<-tabla_viat_final %>% 
 mutate(`Tipo de solicitud`=ifelse(`Días de anticipo - retraso`>0,"Anticipo - Solicitud","Reintegro"))
 
-## nombre a las variablesikkkkkk
+## nombre a las variables
 
 names(tabla_viat_final)<-c  ("Expediente",	
                       "Descripción"	,
