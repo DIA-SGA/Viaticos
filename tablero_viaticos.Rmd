@@ -87,7 +87,7 @@ tabla_viat_final$`Días de anticipo - retraso` <- as.numeric(tabla_viat_final$`D
 ## genero una variable que sea reintegro u anticipo
 tabla_viat_final<-tabla_viat_final %>% 
 mutate(`Tipo de solicitud`=ifelse(`Días de anticipo - retraso`>0,"Anticipo - Solicitud","Reintegro")) %>% 
-  filter(between(fecha_de_caratulacion, as.Date("2020-01-01"), as.Date("2023-12-31")))
+  filter(between(fecha_de_caratulacion, as.Date("2022-04-01"), as.Date("2023-12-31")))
 ```
 
 ```{r}

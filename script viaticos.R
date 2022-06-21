@@ -11,7 +11,6 @@
 #Fecha del último pase 45
 #Días desde el último movimiento (este dato hay que calcularlo) calcular
 #Días desde inicio del trámite (hay que calcularlo) calcular
-ss
 
 rm(list=ls())
 library(pacman)
