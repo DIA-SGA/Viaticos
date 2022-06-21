@@ -46,7 +46,8 @@ tabla_fecha_inicio_viaje$expediente[tabla_fecha_inicio_viaje$expediente==""] <- 
 ```{r}
 ## junto base viáticos con fecha incio viaje
 tabla_viat_final <- tabla_viat %>% 
-  left_join (tabla_fecha_inicio_viaje, by=c("expediente")) 
+  left_join (tabla_fecha_inicio_viaje, by=c("expediente")) %>% 
+  filter(!(is.na(fecha_de_partida)))
 ```
 
 ```{r}
