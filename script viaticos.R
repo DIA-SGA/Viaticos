@@ -31,9 +31,11 @@ tabla_viat <- fread("../Viaticos/detalle_viaticos.csv", data.table = FALSE, enco
 
 tabla_fecha_inicio_viaje <- fread("../Viaticos/Viáticos Nacionales del Ministerio de Salud de la Nación.csv",data.table = FALSE, encoding = "Latin-1") %>%  
   clean_names() %>% 
-  select (2,8) %>% 
+  select (2,3,4,8) %>% 
   rename(expediente="numero_de_expediente") %>% 
+  mutate(`Apelldio y Nombre del agente`=paste(apellido_del_funcionario,nombre_del_funcionario,sep=", ")) %>% 
   distinct()
+  
 
 ## reemplazo perdidos por NA en variablle expediente
 
@@ -79,8 +81,10 @@ tabla_viat_final$`Días de anticipo - retraso` <- as.numeric(tabla_viat_final$`D
 
 names(tabla_viat_final)
 tabla_viat_final<-tabla_viat_final %>% 
-mutate(`Tipo de solicitud`=ifelse(`Días de anticipo - retraso`>0,"Anticipo - Solicitud","Reintegro"))
+mutate(`Tipo de solicitud`=ifelse(`Días de anticipo - retraso`>0,"Anticipo - Solicitud","Reintegro")) %>% 
+mutate(`Apellido y Nombre del agente`=toupper(`Apelldio y Nombre del agente`))  
 
+names(tabla_viat_final)
 ## nombre a las variables
 
 names(tabla_viat_final)<-c  ("Expediente",	
@@ -95,7 +99,8 @@ names(tabla_viat_final)<-c  ("Expediente",
                       "Días desde la caratulación",
                       "Días desde último pase",
                       "Días de anticipo - retraso",
-                      "Tipo de solicitud")
+                      "Tipo de solicitud",
+                      "Apellido y Nombre del agente")
 
 ## agrupamos por repatición y sector
 

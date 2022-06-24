@@ -33,8 +33,9 @@ tabla_viat <- fread("../Viaticos/detalle_viaticos.csv", data.table = FALSE, enco
 
 tabla_fecha_inicio_viaje <- fread("../Viaticos/Viáticos Nacionales del Ministerio de Salud de la Nación.csv",data.table = FALSE, encoding = "Latin-1") %>%  
   clean_names() %>% 
-  select (2,8) %>% 
+  select (2,3,4,8) %>% 
   rename(expediente="numero_de_expediente") %>% 
+  mutate(`Apelldio y Nombre del agente`=paste(apellido_del_funcionario,nombre_del_funcionario,sep=", ")) %>% 
   distinct()
 ```
 
@@ -87,6 +88,7 @@ tabla_viat_final$`Días de anticipo - retraso` <- as.numeric(tabla_viat_final$`D
 ## genero una variable que sea reintegro u anticipo
 tabla_viat_final<-tabla_viat_final %>% 
 mutate(`Tipo de solicitud`=ifelse(`Días de anticipo - retraso`>0,"Anticipo - Solicitud","Reintegro")) %>% 
+mutate(`Apellido y Nombre del agente`=toupper(`Apelldio y Nombre del agente`))%>% 
   filter(between(fecha_de_caratulacion, as.Date("2022-04-01"), as.Date("2023-12-31")))
 ```
 
@@ -94,18 +96,22 @@ mutate(`Tipo de solicitud`=ifelse(`Días de anticipo - retraso`>0,"Anticipo - So
 ## nombre a las variables
 
 names(tabla_viat_final)<-c  ("Expediente",	
-                      "Descripción"	,
-                      "Estado expediente",	
-                      "Fecha caratulación",
-                      "Repartición Actual",
-                      "Sector Actual",
-                      "Usuario actual",
-                      "Fecha desde último pase",
-                      "Fecha inicio viaje",
-                      "Días desde la caratulación",
-                      "Días desde último pase",
-                      "Días de anticipo - retraso",
-                      "Tipo de solicitud")
+                             "Descripción"	,
+                             "Estado expediente",	
+                             "Fecha caratulación",
+                             "Repartición Actual",
+                             "Sector Actual",
+                             "Usuario actual",
+                             "Fecha desde último pase",
+                             "apellido_del_funcionario",
+                             "nombre_del_funcionario",
+                             "Fecha inicio viaje",
+                             "Apelldio y Nombre del agente",
+                             "Días desde la caratulación",
+                             "Días desde último pase",
+                             "Días de anticipo - retraso",
+                             "Tipo de solicitud",
+                             "Apellido y Nombre del agente")
 ```
 
 Listado Expedientes viáticos
@@ -113,7 +119,6 @@ Listado Expedientes viáticos
 
 ```{r}
 
-library(dplyr)
 library(tidyverse)
 
 tabla_viat_final$`Días desde la caratulación`<- as.numeric(tabla_viat_final$`Días desde la caratulación`, units="days")
@@ -124,7 +129,7 @@ tabla_viat_final <- tabla_viat_final %>%
   mutate_if(is.character,as.factor)
 
 library(DT)
-tabla_viat_final [,c(1,2,3,4,5,6,7,8,9,10,11,12,13)] %>%
+tabla_viat_final [,c(1,16,12,3,4,5,6,7,8,11,13,14,15)] %>%
     datatable(extensions = 'Buttons', 
             options = list(initComplete = 
                              JS("function(settings, json){",                     "$(this.api().table().header()).css({'background-color': '#8968CD', 'color': '#fff'});",
@@ -153,7 +158,6 @@ Expedientes viáticos DAP#MS - DCYT#MS
 ===================================== 
 
 ```{r}
-
 library(dplyr)
 library(tidyverse)
 
